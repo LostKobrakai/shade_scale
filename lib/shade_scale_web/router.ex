@@ -2,11 +2,14 @@ defmodule ShadeScaleWeb.Router do
   use ShadeScaleWeb, :router
 
   pipeline :api do
-    plug :accepts, ["json"]
+    plug :accepts, ["xml"]
   end
 
-  scope "/api", ShadeScaleWeb do
+  scope "/", ShadeScaleWeb do
     pipe_through :api
+
+    get "/", ApiController, :list_objects
+    get "/*path", ApiController, :get_objects
   end
 
   # Enable LiveDashboard in development
