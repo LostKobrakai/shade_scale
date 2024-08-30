@@ -56,7 +56,8 @@ defmodule ShadeScale.MixProject do
       {:req, "~> 0.5.6"},
       {:req_s3, "~> 0.2.3"},
       {:image, "~> 0.54.1"},
-      {:extrace, "~> 0.5.0"}
+      {:extrace, "~> 0.5.0"},
+      {:thumbor_path, github: "LostKobrakai/thumbor_path"}
     ]
   end
 

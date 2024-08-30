@@ -24,7 +24,7 @@ defmodule ShadeScaleWeb.Router do
     pipe_through :api
 
     get "/", ApiController, :list_objects
-    get "/*path", ApiController, :get_objects
+    forward "/", ImagePlug, secret: &ShadeScale.thumbor_secret/0
   end
 
   # Enable LiveDashboard in development

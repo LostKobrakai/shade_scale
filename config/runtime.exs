@@ -25,6 +25,17 @@ if System.get_env("PHX_SERVER") do
 end
 
 if config_env() == :prod do
+  thumbor_secret =
+    System.get_env("THUMBOR_SECRET") ||
+      raise """
+      environment variable THUMBOR_SECRET is missing.
+      You can generate one by calling: mix phx.gen.secret
+      """
+
+  config :shade_scale,
+    thumbor_host: "https://shade-scale.fly.storage.tigris.dev",
+    thumbor_secret: thumbor_secret
+
   # The secret key base is used to sign/encrypt cookies and other secrets.
   # A default value is used in config/dev.exs and config/test.exs but you
   # want to use a different value for prod and you most likely don't want
