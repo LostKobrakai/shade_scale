@@ -50,12 +50,31 @@ defmodule ShadeScaleWeb.Endpoint do
   plug Plug.MethodOverride
   plug Plug.Head
   plug Plug.Session, @session_options
+  plug :shadow_bucket
   plug ShadeScaleWeb.Router
 
   def health(conn, _) do
     case conn do
       %{request_path: "/health"} -> conn |> send_resp(200, "OK") |> halt()
       _ -> conn
+    end
+  end
+
+  def shadow_bucket(conn, _) do
+    headers = Plug.Conn.get_req_header(conn, "baggage")
+
+    # Most requests
+    if Enum.any?(headers, &String.contains?(&1, "tigris")) do
+      %Plug.Conn{conn | path_info: ["aws" | conn.path_info]}
+    else
+      # Second request per "GetObject"
+      case conn.query_params do
+        %{"x-id" => "GetObject"} ->
+          %Plug.Conn{conn | path_info: ["aws" | conn.path_info]}
+
+        _ ->
+          conn
+      end
     end
   end
 end
