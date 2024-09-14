@@ -17,7 +17,7 @@ defmodule ShadeScaleWeb.Router do
   scope "/", ShadeScaleWeb do
     pipe_through :browser
 
-    get "/", PageController, :home
+    live "/", HomeLive
   end
 
   scope "/aws", ShadeScaleWeb do

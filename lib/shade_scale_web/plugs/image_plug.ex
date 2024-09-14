@@ -23,7 +23,15 @@ defmodule ShadeScaleWeb.ImagePlug do
   end
 
   defp check_hmac(conn, _) do
-    path = conn.path_info |> Path.join() |> URI.decode()
+    # hack to deal with S3 not allowing %2F as encoded / character on files/paths,
+    # hence this service receiving them unencoded
+    {thumbor, source_path} = Enum.split_while(conn.path_info, &(&1 != "uploads"))
+
+    path =
+      thumbor
+      |> Path.join()
+      |> URI.decode()
+      |> Path.join(Enum.join(source_path, URI.encode_www_form("/")))
 
     if ThumborPath.valid?(path, conn.assigns.secret) do
       %ThumborPath{} = thumbor_path = ThumborPath.parse(path)
@@ -45,10 +53,7 @@ defmodule ShadeScaleWeb.ImagePlug do
       {:ok, %{status: 200, body: image}} when is_binary(image) ->
         assign(conn, :source, image)
 
-      {:ok, %{status: 200}} ->
-        conn |> send_resp(404, "") |> halt()
-
-      {:ok, %{status: 404}} ->
+      {:ok, %{status: status}} when status in [200, 404] ->
         conn |> send_resp(404, "") |> halt()
 
       {:ok, %{status: 500, body: body}} ->

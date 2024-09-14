@@ -16,29 +16,58 @@
 //
 
 // Include phoenix_html to handle method=PUT/DELETE in forms and buttons.
-import "phoenix_html"
+import "phoenix_html";
 // Establish Phoenix Socket and LiveView configuration.
-import {Socket} from "phoenix"
-import {LiveSocket} from "phoenix_live_view"
-import topbar from "../vendor/topbar"
+import { Socket } from "phoenix";
+import { LiveSocket } from "phoenix_live_view";
+import topbar from "../vendor/topbar";
 
-let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
+function uploadToS3(entries, onViewError) {
+  entries.forEach((entry) => {
+    let formData = new FormData();
+    let { url, fields } = entry.meta;
+    Object.entries(fields).forEach(([key, val]) => formData.append(key, val));
+    formData.append("file", entry.file);
+    let xhr = new XMLHttpRequest();
+    onViewError(() => xhr.abort());
+    xhr.onload = () => {
+      return xhr.status === 200 || xhr.status === 204
+        ? entry.progress(100)
+        : entry.error();
+    };
+    xhr.onerror = () => entry.error();
+    xhr.upload.addEventListener("progress", (event) => {
+      if (event.lengthComputable) {
+        let percent = Math.round((event.loaded / event.total) * 100);
+        if (percent < 100) {
+          entry.progress(percent);
+        }
+      }
+    });
+    xhr.open("POST", url, true);
+    xhr.send(formData);
+  });
+}
+
+let csrfToken = document
+  .querySelector("meta[name='csrf-token']")
+  .getAttribute("content");
 let liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
-  params: {_csrf_token: csrfToken}
-})
+  params: { _csrf_token: csrfToken },
+  uploaders: { S3: uploadToS3 },
+});
 
 // Show progress bar on live navigation and form submits
-topbar.config({barColors: {0: "#29d"}, shadowColor: "rgba(0, 0, 0, .3)"})
-window.addEventListener("phx:page-loading-start", _info => topbar.show(300))
-window.addEventListener("phx:page-loading-stop", _info => topbar.hide())
+topbar.config({ barColors: { 0: "#29d" }, shadowColor: "rgba(0, 0, 0, .3)" });
+window.addEventListener("phx:page-loading-start", (_info) => topbar.show(300));
+window.addEventListener("phx:page-loading-stop", (_info) => topbar.hide());
 
 // connect if there are any LiveViews on the page
-liveSocket.connect()
+liveSocket.connect();
 
 // expose liveSocket on window for web console debug logs and latency simulation:
 // >> liveSocket.enableDebug()
 // >> liveSocket.enableLatencySim(1000)  // enabled for duration of browser session
 // >> liveSocket.disableLatencySim()
-window.liveSocket = liveSocket
-
+window.liveSocket = liveSocket;
